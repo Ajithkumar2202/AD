@@ -1,8 +1,10 @@
 {
   "builds": [
-     { "src": "API/index.py", "use": "@vercel/python" }
+    { "src": "api/index.py", "use": "@vercel/python" },
+    { "src": "phone_gps.html", "use": "@vercel/static" }
   ],
   "routes": [
-     { "src": "/api/(.*)", "dest": "API/index.py" }
+    { "src": "/api/(.*)", "dest": "api/index.py" },
+    { "src": "/phone_gps.html", "dest": "phone_gps.html" }
   ]
 }
