@@ -1,26 +1,105 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <meta charset="UTF-8">
+  <title>Accident Detection</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 40px; }
+    button { font-size: 18px; padding: 15px 30px; }
+    #status { margin-top: 20px; font-size: 16px; color: #333; }
+  </style>
+</head>
 <body>
-<h2>Sending Live Location...</h2>
 
-<script>
-function sendLocation() {
-    navigator.geolocation.getCurrentPosition(function(position) {
-        fetch("http://10.252.143.103/update_location", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude
-            })
+  <h2>Accident Detection</h2>
+  <button onclick="start()">Enable Detection</button>
+  <div id="status">Waiting to start...</div>
+
+  <video id="video" autoplay style="display:none;"></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <script>
+    // ⬇️ CHANGE THIS to your real Vercel domain
+    const BACKEND_URL = "https://your-project.vercel.app/api/trigger_alert";
+
+    const ACCIDENT_THRESHOLD = 25; // tweak sensitivity here
+    let cameraStream = null;
+    let alertSent = false;
+
+    async function start() {
+      document.getElementById("status").innerText = "Requesting permissions...";
+
+      // 1. Camera permission
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        document.getElementById("video").srcObject = cameraStream;
+      } catch (err) {
+        document.getElementById("status").innerText = "Camera permission denied.";
+        return;
+      }
+
+      // 2. Motion permission (iOS needs explicit request)
+      if (typeof DeviceMotionEvent.requestPermission === "function") {
+        const perm = await DeviceMotionEvent.requestPermission();
+        if (perm !== "granted") {
+          document.getElementById("status").innerText = "Motion permission denied.";
+          return;
+        }
+      }
+
+      document.getElementById("status").innerText = "Monitoring for accidents...";
+      window.addEventListener("devicemotion", handleMotion);
+    }
+
+    function handleMotion(event) {
+      if (alertSent) return; // only trigger once
+
+      const acc = event.accelerationIncludingGravity;
+      if (!acc) return;
+
+      const totalForce = Math.sqrt(acc.x ** 2 + acc.y ** 2 + acc.z ** 2);
+
+      if (totalForce > ACCIDENT_THRESHOLD) {
+        alertSent = true;
+        document.getElementById("status").innerText = "🚨 Accident detected! Sending alert...";
+        triggerAlert();
+      }
+    }
+
+    function capturePhoto() {
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext("2d").drawImage(video, 0, 0);
+      return canvas.toDataURL("image/jpeg"); // base64 image string
+    }
+
+    function triggerAlert() {
+      const photo = capturePhoto();
+
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        const payload = {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          photo: photo
+        };
+
+        const res = await fetch(BACKEND_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
         });
-    });
-}
 
-setInterval(sendLocation, 5000);
-</script>
-
+        if (res.ok) {
+          document.getElementById("status").innerText = "✅ Alert sent!";
+        } else {
+          document.getElementById("status").innerText = "❌ Failed to send alert.";
+        }
+      }, () => {
+        document.getElementById("status").innerText = "Location permission denied.";
+      });
+    }
+  </script>
 </body>
 </html>
