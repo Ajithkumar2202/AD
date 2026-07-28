@@ -10,7 +10,7 @@
 
 
 
-# # ---------------- SEND ALERT FUNCTION ----------------
+
 # def send_alert(location):
     
 #     # Create Google Maps link
