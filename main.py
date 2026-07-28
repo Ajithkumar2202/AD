@@ -5,6 +5,7 @@ from sensor_module import get_acceleration, get_tilt
 from detection import detect_accident
 from camera_module import capture_image
 from alert_module import send_alert
+from API import index 
 
 def get_location():
     try:
