@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h2>Sending Live Location...</h2>
+
+<script>
+function sendLocation() {
+    navigator.geolocation.getCurrentPosition(function(position) {
+        fetch("http://10.252.143.103/update_location", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude
+            })
+        });
+    });
+}
+
+setInterval(sendLocation, 5000);
+</script>
+
+</body>
+</html>
