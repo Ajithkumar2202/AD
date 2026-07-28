@@ -1,4 +1,4 @@
-# import requests
+import requests
 from sensor_module import get_acceleration, get_tilt
 from detection import detect_accident
 from camera_module import capture_image
